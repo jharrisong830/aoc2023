@@ -39,16 +39,8 @@ fun chrToCard(chr: Char): Card {
     }
 }
 
-fun determineHand(cards: List<Card>): Hand {
-    var cardCounts: MutableMap<Card, Int> = mutableMapOf()
-    for (card in cards) {
-        if (card !in cardCounts) {
-            cardCounts.put(card, 1)
-        }
-        else {
-            cardCounts[card] = cardCounts[card]!! + 1 
-        }
-    }
+
+fun determineHand(cardCounts: MutableMap<Card, Int>): Hand {
     if (cardCounts.size == 5) return Hand.HIGH // no repeated cards of any kind
     else if (cardCounts.size == 4) return Hand.PAIR // only possible to have a pair of alike cards
     else if (cardCounts.size == 3) {
@@ -64,8 +56,7 @@ fun determineHand(cards: List<Card>): Hand {
     else return Hand.FIVEOF // cardCounts.size == 1, 5 of a kind
 }
 
-
-fun determineHandWithJokers(cards: List<Card>): Hand {
+fun generateCardCounts(cards: List<Card>): MutableMap<Card, Int> {
     var cardCounts: MutableMap<Card, Int> = mutableMapOf()
     for (card in cards) {
         if (card !in cardCounts) {
@@ -75,25 +66,31 @@ fun determineHandWithJokers(cards: List<Card>): Hand {
             cardCounts[card] = cardCounts[card]!! + 1 
         }
     }
-    val jokers = cardCounts[Card.JACK] ?: 0
-    if (Card.JACK in cardCounts) cardCounts.remove(Card.JACK)
+    return cardCounts
+}
 
-    if (cardCounts.size == 5) return Hand.HIGH // five different cards, no jokers possible
-    else if (cardCounts.size == 4) { // four types of cards, 1 joker possible
-        if (jokers == 0) return Hand.PAIR // no jokers -> only possible to have a pair with 5 cards
-        else return Hand.THREEOF // with a joker, we can turn that into a three pair (best possible)
-    }
-    else if (cardCounts.size == 3) { // 3 types of cards, two jokers possible, 
-        if (cardCounts.values.toSet() == setOf(1, 2, 2)) return Hand.TWOPAIR // (3, 1, 1) + 0J -> three of a kind, next branch, (2, 2, 1) + 0J -> two pair
-        else return Hand.THREEOF // always three of a kind with joker (2, 1, 1) + 1J, (1, 1, 1) + 2J -> three of a kind
-    }
-    else if (cardCounts.size == 2) { // 2 types of cards, 3 jokers possible (2, 3)
-        return when (cardCounts.values.toSet()) {
-            setOf(2, 3), setOf(2, 2) -> Hand.FULLHOUSE // 0J or 1J can build a full house
-            else -> Hand.FOUROF // all other combos are four of a kind (0J, 1J, 2J, 3J)
+
+fun generateCardCountsJoker(cards: List<Card>): MutableMap<Card, Int> {
+    var cardCounts: MutableMap<Card, Int> = mutableMapOf()
+    for (card in cards) {
+        if (card !in cardCounts) {
+            cardCounts.put(card, 1)
+        }
+        else {
+            cardCounts[card] = cardCounts[card]!! + 1 
         }
     }
-    else return Hand.FIVEOF // cardCounts.size == 1 or 0, all cards are the same, with some jokers possible (auto five of a kind)
+
+    val jokers = cardCounts[Card.JACK] ?: 0
+    if (jokers == 5) return cardCounts // all jokers are automatic five of a kind, keep them in the map
+    if (Card.JACK in cardCounts) cardCounts.remove(Card.JACK)
+
+    val mostCommonCount = cardCounts.values.maxOrNull() ?: 0
+    val mostCommonCard = cardCounts.keys.filter { k: Card -> cardCounts[k] == mostCommonCount }[0]
+
+    cardCounts[mostCommonCard] = cardCounts[mostCommonCard]!! + jokers // add jokers to most common card type
+
+    return cardCounts
 }
 
 
@@ -122,10 +119,10 @@ fun sortHandsByStrength(hands: List<Triple<List<Card>, Hand, Int>>, comparer: Co
 }
 
 fun getTotalWinnings(sortedHands: List<Triple<List<Card>, Hand, Int>>): Int {
-    for (i in 0..<sortedHands.size) {
-        val (cards, hand, bid) = sortedHands[i]
-        println((i+1).toString() + ".)\t" + cards.toString() + "  " + hand.toString() + "  " + bid.toString())
-    }
+    // for (i in 0..<sortedHands.size) {
+    //     val (cards, hand, bid) = sortedHands[i]
+    //     println((i+1).toString() + ".)\t" + cards.toString() + "  " + hand.toString() + "  " + bid.toString())
+    // }
     val indexedBids = sortedHands.mapIndexed { index: Int, (_, _, bid): Triple<List<Card>, Hand, Int> -> (index + 1) * bid }
     return indexedBids.reduce { acc, x -> acc + x }
 }
@@ -135,7 +132,7 @@ fun getTotalWinnings(sortedHands: List<Triple<List<Card>, Hand, Int>>): Int {
 
 fun main() {
     val inputData = parseFile("./input.txt")
-    val hands = inputData.map { (cardStr, bid): Pair<String, Int> -> Pair(cardStr.map { chr: Char -> chrToCard(chr) }, bid) }.map { (hand, bid): Pair<List<Card>, Int> -> Triple(hand, determineHand(hand), bid) }
+    val hands = inputData.map { (cardStr, bid): Pair<String, Int> -> Pair(cardStr.map { chr: Char -> chrToCard(chr) }, bid) }.map { (hand, bid): Pair<List<Card>, Int> -> Triple(hand, determineHand(generateCardCounts(hand)), bid) }
 
     val handComparer = Comparator { (_, h1, _): Triple<List<Card>, Hand, Int>, (_, h2, _): Triple<List<Card>, Hand, Int> -> h1.ordinal - h2.ordinal }
         .then { (c1, _, _): Triple<List<Card>, Hand, Int>, (c2, _, _): Triple<List<Card>, Hand, Int> -> compareHandsByCards(c1, c2) }
@@ -145,7 +142,7 @@ fun main() {
 
 
 
-    val jokerHands = inputData.map { (cardStr, bid): Pair<String, Int> -> Pair(cardStr.map { chr: Char -> chrToCard(chr) }, bid) }.map { (hand, bid): Pair<List<Card>, Int> -> Triple(hand, determineHandWithJokers(hand), bid) }
+    val jokerHands = inputData.map { (cardStr, bid): Pair<String, Int> -> Pair(cardStr.map { chr: Char -> chrToCard(chr) }, bid) }.map { (hand, bid): Pair<List<Card>, Int> -> Triple(hand, determineHand(generateCardCountsJoker(hand)), bid) }
 
     val handComparerJoker = Comparator { (_, h1, _): Triple<List<Card>, Hand, Int>, (_, h2, _): Triple<List<Card>, Hand, Int> -> h1.ordinal - h2.ordinal }
         .then { (c1, _, _): Triple<List<Card>, Hand, Int>, (c2, _, _): Triple<List<Card>, Hand, Int> -> compareHandsWithJokers(c1, c2) }

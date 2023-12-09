@@ -18,7 +18,8 @@ My solutions for Advent of Code 2023, in various languages
     * Python (Part 2, not finished)
 6. **Day 6**: Completed!
     * Rust (Parts 1 & 2)
-7. **Day 7**: Not finished
-    * Kotlin (Part 1, finished)
-    * Kotlin (Part 2, not finished)
+7. **Day 7**: Completed!
+    * Kotlin (Parts 1 & 2)
+8. **Day 8**: Completed!
+    * Rust (Parts 1 & 2)
     
