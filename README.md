@@ -22,4 +22,6 @@ My solutions for Advent of Code 2023, in various languages
     * Kotlin (Parts 1 & 2)
 8. **Day 8**: Completed!
     * Rust (Parts 1 & 2)
+9. **Day 9**: Completed!
+    * Swift (Parts 1 & 2)
     
