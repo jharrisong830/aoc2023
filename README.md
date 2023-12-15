@@ -24,4 +24,8 @@ My solutions for Advent of Code 2023, in various languages
     * Rust (Parts 1 & 2)
 9. **Day 9**: Completed!
     * Swift (Parts 1 & 2)
+10. **Day 10**: Not finished
+    * Python (Part 1, finished)
+    * Part 2 not attempted
+    
     
